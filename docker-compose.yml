@@ -1,0 +1,107 @@
+services:
+  web:
+    build: .
+    command: bin/rails server -b 0.0.0.0 -p 3000
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vite:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@db:5432/${POSTGRES_DB:-rails_base_development}
+      REDIS_URL: redis://redis:6379/0
+      RAILS_DEVELOPMENT_HOSTS: ".localtest.me"
+      VITE_RUBY_HOST: "vite"
+      VITE_RUBY_PORT: "3036"
+      VITE_RUBY_PROTOCOL: "http"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.rails.rule=Host(`rails.localtest.me`)"
+      - "traefik.http.routers.rails.service=rails"
+      - "traefik.http.services.rails.loadbalancer.server.port=3000"
+      - "traefik.http.routers.rails.entrypoints=websecure"
+      - "traefik.http.routers.rails.tls=true"
+    networks:
+      - proxy
+      - default
+
+  vite:
+    build: .
+    entrypoint: []
+    command: bin/vite dev
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    ports:
+      - "3036:3036"
+    environment:
+      VITE_HOST: "0.0.0.0"
+      VITE_PORT: "3036"
+      VITE_PROTOCOL: "http"
+    networks:
+      - proxy
+      - default
+
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-rails_base_development}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@localtest.me}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.localtest.me`)"
+      - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
+      - "traefik.http.routers.pgadmin.entrypoints=websecure"
+      - "traefik.http.routers.pgadmin.tls=true"
+    networks:
+      - default
+      - proxy
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/var/lib/redis/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+  node_modules:
+
+networks:
+  proxy:
+    external: true

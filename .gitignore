@@ -1,0 +1,82 @@
+# Rails
+*.rbc
+capybara-*.html
+.rspec
+/log
+/tmp
+/db/*.sqlite3
+/db/*.sqlite3-*
+/public/system
+/coverage/
+/spec/tmp
+*.orig
+rerun.txt
+pickle-results.txt
+**/.rails_footnotes
+
+# Ignoring logfile created by web server (e.g. Apache, nginx, trinidad, unicorn, etc.)
+*.log
+
+# Ignoring potentially sensitive information
+.env
+.env.local
+.env.*.local
+config/master.key
+config/credentials.yml.enc.local
+
+# Ruby cache
+/.bundle
+/vendor/bundle
+Gemfile.lock
+
+# Node modules & pnpm
+node_modules/
+.pnpm-store/
+pnpm-lock.yaml
+
+# Vite
+/public/vite
+/public/vite-manifest.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.classpath
+.byebug_history
+.env.development.local
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Windows / macOS
+Thumbs.db
+.AppleDouble
+.LSOverride
+*.icloud
+*Zone.Identifier
+*Zone.Identifier:$DATA
+
+# Test
+/coverage
+
+# Ruby version
+.ruby-version.local
+
+# Storage
+/storage
+
+# Temporary files
+/tmp
+/tmp/*
+!/tmp/.keep
+
+# Production build
+/public/packs
+/public/packs-test
+/node_modules

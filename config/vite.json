@@ -1,0 +1,17 @@
+{
+  "all": {
+    "sourceCodeDir": "app/javascript",
+    "watchAdditionalPaths": [],
+    "skipCompatibilityCheck": true
+  },
+  "development": {
+    "autoBuild": true,
+    "port": 3036,
+    "host": "0.0.0.0",
+    "https": false
+  },
+  "test": {
+    "autoBuild": true,
+    "port": 3037
+  }
+}
