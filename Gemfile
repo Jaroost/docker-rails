@@ -28,6 +28,11 @@ gem "vite_rails"
 # Redis for ActionCable
 gem "redis", "~> 5.0"
 
+# OAuth2 authentication
+gem "omniauth"
+gem "omniauth-oauth2"
+gem "omniauth-rails_csrf_protection"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 

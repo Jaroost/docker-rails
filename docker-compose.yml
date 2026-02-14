@@ -14,6 +14,8 @@ services:
         condition: service_healthy
       vite:
         condition: service_started
+      keycloak:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@db:5432/${POSTGRES_DB:-rails_base_development}
       REDIS_URL: redis://redis:6379/0
@@ -21,6 +23,16 @@ services:
       VITE_RUBY_HOST: "vite"
       VITE_RUBY_PORT: "3036"
       VITE_RUBY_PROTOCOL: "http"
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-rails-base}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-rails-base-app}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      KEYCLOAK_SITE: ${KEYCLOAK_SITE:-https://keycloak.localtest.me}
+      KEYCLOAK_REDIRECT_URI: ${KEYCLOAK_REDIRECT_URI:-https://rails.localtest.me/auth/keycloak/callback}
+      # Disable SSL verification for local development with self-signed certs
+      SSL_CERT_FILE: /dev/null
+      RUBY_NET_HTTP_SSL_VERIFY_PEER: "false"
+    extra_hosts:
+      - "keycloak.localtest.me:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -96,6 +108,43 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.3
+    command: start-dev
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/${KEYCLOAK_DB:-keycloak_development}
+      KC_DB_USERNAME: ${POSTGRES_USER:-postgres}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_HOSTNAME_URL: https://keycloak.localtest.me
+      KC_HOSTNAME_ADMIN_URL: https://keycloak.localtest.me
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.keycloak.rule=Host(`keycloak.localtest.me`)"
+      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
+      - "traefik.http.routers.keycloak.entrypoints=websecure"
+      - "traefik.http.routers.keycloak.tls=true"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - proxy
+      - default
 
 volumes:
   postgres_data:
