@@ -35,11 +35,11 @@ services:
 
   vite:
     build: .
-    entrypoint: []
+    entrypoint: ./bin/vite-dev-entrypoint
     command: bin/vite dev
     volumes:
       - .:/app
-      - node_modules:/app/node_modules
+      - /app/node_modules
     ports:
       - "3036:3036"
     environment:

@@ -185,7 +185,10 @@ bin/rails -T  # List all available tasks
   - Traefik labels for HTTPS routing (rails.localtest.me, pgadmin.localtest.me)
   - Both services on Docker network for internal communication
   - External network "proxy" required (for Traefik)
-- **Entrypoint:** `bin/docker-entrypoint` runs bundle install, pnpm install, db:prepare
+  - `node_modules` stored in anonymous volume for vite service (not bind-mounted)
+- **Entrypoints:**
+  - `bin/docker-entrypoint` (web service): runs bundle install, pnpm install, db:prepare
+  - `bin/vite-dev-entrypoint` (vite service): runs pnpm install with CI mode and fixes esbuild permissions
 
 ### Testing
 - **Test Helper:** `test/test_helper.rb`
@@ -270,6 +273,17 @@ Note: No `publicOutputDir` - let vite-plugin-ruby auto-detect `/vite/` prefix
 **Vite adding `/vite/` prefix unexpectedly:**
 - Don't set `publicOutputDir` in `config/vite.json` - let vite-plugin-ruby auto-detect
 - Set `base: "/"` in `vite.config.ts` if needed to override
+
+**Vite failing to start with esbuild EACCES error:**
+- **Problem:** pnpm v10+ ignores build scripts by default for security, causing esbuild binaries to lack execute permissions
+- **Solution:** The `bin/vite-dev-entrypoint` script handles this automatically:
+  - Uses `CI=true pnpm install` to avoid interactive prompts
+  - Fixes esbuild binary permissions with `chmod +x` after install
+- **Manual fix if needed:**
+  ```bash
+  docker compose exec vite chmod -R +x node_modules/.pnpm/@esbuild*/node_modules/@esbuild/*/bin/*
+  ```
+- **Note:** The `vite` service uses a separate entrypoint (`bin/vite-dev-entrypoint`) that only installs node dependencies without Rails/database setup
 
 ## Notes
 

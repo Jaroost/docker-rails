@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+if [ -f package.json ]; then
+  CI=true pnpm install
+
+  # Fix esbuild binary permissions (pnpm 10.x ignores build scripts by default)
+  chmod -R +x node_modules/.pnpm/@esbuild*/node_modules/@esbuild/*/bin/* 2>/dev/null || true
+fi
+
+exec "$@"
