@@ -1,0 +1,78 @@
+#!/bin/bash
+# Script de test de l'API Rails avec authentification JWT Keycloak
+
+set -e
+
+# Couleurs pour l'output
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║          TEST API Rails avec JWT Keycloak                   ║${NC}"
+echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+# Charger les variables d'environnement
+if [ -f .env ]; then
+  export $(cat .env | grep -E "^KEYCLOAK_" | xargs)
+fi
+
+# Paramètres par défaut
+USERNAME="${1:-testuser}"
+PASSWORD="${2:-testpassword}"
+
+echo -e "${YELLOW}→${NC} Obtention du token JWT depuis Keycloak..."
+echo "  Username: $USERNAME"
+
+# Obtenir le token
+TOKEN_RESPONSE=$(curl -s -k "${KEYCLOAK_SITE}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token" \
+  -d "grant_type=password" \
+  -d "client_id=${KEYCLOAK_CLIENT_ID}" \
+  -d "client_secret=${KEYCLOAK_CLIENT_SECRET}" \
+  -d "username=${USERNAME}" \
+  -d "password=${PASSWORD}")
+
+# Vérifier si on a obtenu un token
+if echo "$TOKEN_RESPONSE" | grep -q "access_token"; then
+  TOKEN=$(echo "$TOKEN_RESPONSE" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+  echo -e "${GREEN}✓${NC} Token obtenu avec succès!"
+  echo "  Token (premiers 80 caractères): ${TOKEN:0:80}..."
+else
+  echo -e "${RED}✗${NC} Erreur lors de l'obtention du token:"
+  echo "$TOKEN_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$TOKEN_RESPONSE"
+  exit 1
+fi
+
+echo ""
+echo -e "${YELLOW}→${NC} Appel de l'API: GET /api/v1/users/me"
+
+# Appeler l'API
+API_RESPONSE=$(curl -s -k -w "\n%{http_code}" "https://rails.localtest.me/api/v1/users/me" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json")
+
+# Extraire le code HTTP
+HTTP_CODE=$(echo "$API_RESPONSE" | tail -n1)
+BODY=$(echo "$API_RESPONSE" | sed '$d')
+
+if [ "$HTTP_CODE" = "200" ]; then
+  echo -e "${GREEN}✓${NC} Réponse (200 OK):"
+  echo "$BODY" | python3 -m json.tool 2>/dev/null || echo "$BODY"
+else
+  echo -e "${RED}✗${NC} Erreur ($HTTP_CODE):"
+  echo "$BODY" | python3 -m json.tool 2>/dev/null || echo "$BODY"
+  exit 1
+fi
+
+echo ""
+echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║                    Test réussi !                             ║${NC}"
+echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+echo -e "${GREEN}✓${NC} L'API fonctionne correctement avec JWT"
+echo ""
+echo "Usage: bin/test-api [username] [password]"
+echo "Exemple: bin/test-api testuser testpassword"
