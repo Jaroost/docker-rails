@@ -33,6 +33,12 @@ gem "omniauth"
 gem "omniauth-oauth2"
 gem "omniauth-rails_csrf_protection"
 
+# Devise for authentication
+gem "devise"
+
+# JWT authentication for API (includes JWKS support)
+gem "jwt"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 

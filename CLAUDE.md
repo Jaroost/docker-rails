@@ -9,11 +9,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Tech Stack:**
 - Backend: Rails 8.1, Ruby 3.3.10, PostgreSQL 16
 - Frontend: Vue 3, Bootstrap 5, Vite, TypeScript
+- Authentication: Devise + Keycloak (OAuth 2.0/OIDC)
+- API: JWT stateless authentication (Keycloak JWKS validation)
 - Asset Pipeline: Propshaft + Vite Ruby
 - Job Queue: Solid Queue (database-backed)
 - Real-time: Solid Cable (database-backed)
 - Caching: Solid Cache (database-backed)
 - Deployment: Docker, Kamal
+
+### Authentication
+
+**Web (Browser):**
+- Devise + Keycloak OAuth 2.0 (OpenID Connect)
+- Session-based authentication (cookies)
+- Custom OmniAuth strategy for Keycloak 17+ compatibility
+- Two logout modes: session-only and full Keycloak logout
+- Direct signup flow via Keycloak registration endpoint
+
+**API (Stateless):**
+- JWT Bearer token authentication
+- Tokens validated using Keycloak JWKS (RS256 signatures)
+- JWKS cache (1 hour) for performance
+- Auto-create/update users from JWT claims
+- No sessions or CSRF protection (stateless)
+
+**User Model:**
+- Stores OAuth tokens and user profile
+- Single model for both web and API authentication
+- Devise modules: `:omniauthable`, `:trackable`, `:rememberable`
 
 ## Development Setup
 
@@ -128,6 +151,32 @@ bin/vite build
 pnpm run vue-tsc --noEmit
 ```
 
+### Authentication & Keycloak
+```bash
+# Check Keycloak status
+docker compose ps keycloak
+docker compose logs -f keycloak
+
+# Access Keycloak admin console
+# URL: https://keycloak.localtest.me
+# Username: admin / Password: admin
+
+# Test API with JWT token (see API.md for complete examples)
+TOKEN=$(curl -s -X POST "https://keycloak.localtest.me/realms/rails-base/protocol/openid-connect/token" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" | jq -r '.access_token')
+
+curl -X GET "https://rails.localtest.me/api/v1/users/me" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Verify users in database
+docker compose exec web bin/rails runner "puts User.all.to_json"
+
+# Force recreate web service after .env changes
+docker compose up -d --force-recreate web
+```
+
 ### General
 ```bash
 # Open Rails console
@@ -156,10 +205,23 @@ bin/rails -T  # List all available tasks
   - `port: 3036`, `host: 0.0.0.0`, `https: false`
 
 ### Backend (Rails)
-- **Controllers:** `app/controllers/` (ApplicationController + specific controllers)
-- **Models:** `app/models/` (ApplicationRecord + domain models)
-- **Views:** `app/views/` (mostly view templates; UI handles via Vue)
-- **Routes:** `config/routes.rb` (root redirects to `home#test`)
+- **Controllers:** `app/controllers/`
+  - `application_controller.rb` - Base controller with authentication helpers
+  - `users/sessions_controller.rb` - OAuth login/logout with Keycloak
+  - `users/omniauth_callbacks_controller.rb` - OAuth callback handler
+  - `api/base_controller.rb` - Base controller for JWT API (stateless)
+  - `api/v1/users_controller.rb` - API user endpoints
+- **Models:** `app/models/`
+  - `user.rb` - Devise model with OAuth and JWT support
+- **Services:** `app/services/`
+  - `keycloak_jwt_validator.rb` - JWT validation with Keycloak JWKS
+- **Concerns:** `app/controllers/concerns/`
+  - `api_authenticatable.rb` - JWT authentication concern
+- **Custom OmniAuth:** `lib/omniauth/strategies/keycloak.rb`
+  - Custom strategy for Keycloak 17+ compatibility
+  - Handles both login and signup flows (switches endpoints dynamically)
+- **Views:** `app/views/` (mostly view templates; UI handled via Vue)
+- **Routes:** `config/routes.rb` (Devise + custom session routes + API namespace)
 - **Helpers:** `app/helpers/`
 - **Jobs:** `app/jobs/` (uses Solid Queue)
 - **Mailers:** `app/mailers/`
@@ -170,21 +232,43 @@ bin/rails -T  # List all available tasks
 - **Solid infrastructure:** Multiple database connections for cache/queue/cable
 - **Migrations:** `db/migrate/`, `db/cache_migrate/`, `db/queue_migrate/`, `db/cable_migrate/`
 
+### API (JWT Authentication)
+- **Base Controller:** `app/controllers/api/base_controller.rb`
+  - Skips CSRF protection (stateless)
+  - Requires JWT Bearer token in Authorization header
+  - Always responds with JSON
+- **Concern:** `app/controllers/concerns/api_authenticatable.rb`
+  - Extracts and validates JWT from Authorization header
+  - Uses `KeycloakJwtValidator` service for token validation
+  - Auto-creates/updates users from JWT claims
+  - Overrides Devise's `current_user` for API context
+- **Service:** `app/services/keycloak_jwt_validator.rb`
+  - Validates JWT signatures using Keycloak JWKS endpoint
+  - Caches JWKS keys (1 hour) for performance
+  - Verifies issuer, expiration, and algorithm (RS256 only)
+- **Endpoints:** `app/controllers/api/v1/`
+  - `GET /api/v1/users/me` - Returns current user profile from JWT token
+- **Documentation:** See `API.md` for complete usage examples
+
 ### Configuration
 - **Environment:** `config/environment.rb` + `config/environments/{development,test,production}.rb`
 - **Application settings:** `config/application.rb`
   - Modern browser only (webp, web-push, CSS nesting support required)
   - Configured hosts: localhost, rails.localtest.me
 - **Credentials:** `config/credentials.yml.enc` + `config/master.key` (encrypted secrets)
+- **Devise:** `config/initializers/devise.rb` - Devise configuration
+- **SSL (dev only):** `config/initializers/00_openssl_dev.rb` - Disables SSL verification (NEVER in production!)
 
 ### Docker
 - **Dockerfile:** Multi-service build (Ruby 3.3-slim + Node 20 + pnpm)
-- **docker-compose.yml:** Orchestrates web (Rails), vite (Vite dev), db (PostgreSQL), pgadmin, redis
+- **docker-compose.yml:** Orchestrates web, vite, db, redis, keycloak, pgadmin
   - `web` service: Rails on port 3000, detects Vite via `VITE_RUBY_HOST=vite` + `VITE_RUBY_PORT=3036`
   - `vite` service: Vite dev server on port 3036 (HTTP)
-  - Traefik labels for HTTPS routing (rails.localtest.me, pgadmin.localtest.me)
-  - Both services on Docker network for internal communication
-  - External network "proxy" required (for Traefik)
+  - `keycloak` service: Identity server accessible at https://keycloak.localtest.me
+  - `db` service: PostgreSQL with separate databases (app, keycloak, cache, queue, cable)
+  - Traefik labels for HTTPS routing (rails.localtest.me, keycloak.localtest.me, pgadmin.localtest.me)
+  - External network "proxy" required (for Traefik reverse proxy)
+  - `extra_hosts` in web service: allows Rails to resolve keycloak.localtest.me via Traefik
   - `node_modules` stored in anonymous volume for vite service (not bind-mounted)
 - **Entrypoints:**
   - `bin/docker-entrypoint` (web service): runs bundle install, pnpm install, db:prepare
@@ -203,15 +287,17 @@ bin/rails -T  # List all available tasks
   - `test/fixtures/` - Test data
 
 ## Key Files Reference
-- `.env` - Environment variables (create with POSTGRES_PASSWORD for Docker)
+- `.env` - Environment variables (POSTGRES_PASSWORD, Keycloak OAuth config)
 - `Gemfile` / `Gemfile.lock` - Ruby dependencies
 - `package.json` / `pnpm-lock.yaml` - JavaScript dependencies
 - `.ruby-version` - Ruby version (3.3.10)
 - `Dockerfile` - Container image definition
-- `docker-compose.yml` - Multi-container setup with Traefik routing
+- `docker-compose.yml` - Multi-container setup with Traefik + Keycloak
 - `vite.config.ts` - Frontend bundler configuration (HMR setup)
 - `tsconfig.json` - TypeScript configuration
 - `HMR_SETUP.md` - Guide for multi-application Vite HMR setup with Traefik
+- `KEYCLOAK_SETUP.md` - Complete Keycloak OAuth setup guide (realm, client, users)
+- `API.md` - API documentation with JWT authentication examples
 
 ## Vite + HMR Configuration Details
 
@@ -287,6 +373,9 @@ Note: No `publicOutputDir` - let vite-plugin-ruby auto-detect `/vite/` prefix
 
 ## Notes
 
+- **Authentication:** Devise with Keycloak OAuth for web sessions, JWT for API requests. See `KEYCLOAK_SETUP.md` for OAuth configuration and `API.md` for JWT usage.
+- **SSL in Development:** SSL verification is disabled for development (self-signed Traefik certificates). Files: `config/initializers/00_openssl_dev.rb`, docker-compose env vars. **NEVER disable SSL verification in production!**
+- **Custom OmniAuth Strategy:** Uses custom Keycloak strategy (`lib/omniauth/strategies/keycloak.rb`) for Keycloak 17+ compatibility, replacing `omniauth-keycloak` gem.
 - **Frontend Bootstrap Integration:** The `application.ts` entrypoint imports Bootstrap CSS and JS, allowing use of Bootstrap components in Vue templates.
 - **Database-backed Infrastructure:** Solid Cache, Queue, and Cable store state in the database—migrations exist in separate directories.
 - **Modern Browser Requirement:** ApplicationController enforces modern browser support (webp, push notifications, etc.).

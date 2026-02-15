@@ -15,6 +15,32 @@
 
     <%= vite_client_tag %>
     <%= vite_typescript_tag "application" %>
+
+    <style>
+      /* Prevent FOUC (Flash of Unstyled Content) */
+      body {
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.1s ease-in;
+      }
+
+      body.loaded {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      /* Fallback: show content after 2 seconds even if JS fails */
+      body {
+        animation: fallback-show 0s 2s forwards;
+      }
+
+      @keyframes fallback-show {
+        to {
+          visibility: visible;
+          opacity: 1;
+        }
+      }
+    </style>
   </head>
 
   <body>
@@ -38,19 +64,19 @@
                   <li><h6 class="dropdown-header"><%= current_user.email %></h6></li>
                   <li><hr class="dropdown-divider"></li>
                   <li>
-                    <%= button_to "Logout (Session Only)", logout_path, method: :delete, class: "dropdown-item" %>
+                    <%= button_to "Logout (Session Only)", destroy_user_session_path, method: :delete, class: "dropdown-item" %>
                   </li>
                   <li>
-                    <%= button_to "Full Logout (Keycloak)", logout_path(full_logout: true), method: :delete, class: "dropdown-item" %>
+                    <%= button_to "Full Logout (Keycloak)", destroy_user_session_path(full_logout: true), method: :delete, class: "dropdown-item" %>
                   </li>
                 </ul>
               </li>
             <% else %>
               <li class="nav-item me-2">
-                <%= button_to "Sign up", "/auth/keycloak", method: :post, params: { kc_action: "register" }, class: "btn btn-outline-light btn-sm", form: { style: "display: inline;" } %>
+                <%= button_to "Sign up", user_keycloak_omniauth_authorize_path, method: :post, params: { kc_action: "register" }, class: "btn btn-outline-light btn-sm", form: { style: "display: inline;" } %>
               </li>
               <li class="nav-item">
-                <%= button_to "Sign in", "/auth/keycloak", method: :post, class: "btn btn-primary btn-sm", form: { style: "display: inline;" } %>
+                <%= button_to "Sign in", user_keycloak_omniauth_authorize_path, method: :post, class: "btn btn-primary btn-sm", form: { style: "display: inline;" } %>
               </li>
             <% end %>
           </ul>
