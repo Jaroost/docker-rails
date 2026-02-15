@@ -15,6 +15,32 @@
 
     <%= vite_client_tag %>
     <%= vite_typescript_tag "application" %>
+
+    <style>
+      /* Prevent FOUC (Flash of Unstyled Content) */
+      body {
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.3s ease-in;
+      }
+
+      body.loaded {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      /* Fallback: show content after 2 seconds even if JS fails */
+      body {
+        animation: fallback-show 0s 2s forwards;
+      }
+
+      @keyframes fallback-show {
+        to {
+          visibility: visible;
+          opacity: 1;
+        }
+      }
+    </style>
   </head>
 
   <body>
