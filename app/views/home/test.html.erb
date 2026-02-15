@@ -62,6 +62,77 @@
 </div>
 
 <div class="row mb-4">
+  <div class="col-md-8 mb-3">
+    <h3>Composant TodoList</h3>
+    <%test=['test', 'test2', 'test3'] %>
+    <div
+      data-behavior="vue-todo-list"
+      data-title="Mes tâches du jour"
+      data-initial-todos='<%=test.to_json.html_safe %>'
+    ></div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <h3>Counter bis</h3>
+    <div
+      data-behavior="vue-counter-bis"
+    ></div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col">
+    <h2 class="mb-3">📁 Composants dans des sous-dossiers</h2>
+    <p class="lead">
+      Les composants peuvent être organisés dans des sous-dossiers.
+      Le chemin est automatiquement inclus dans le nom pour éviter les conflits.
+    </p>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-4 mb-3">
+    <h3>Bouton partagé</h3>
+    <p><code>shared/Button.vue</code> → <code>vue-shared-button</code></p>
+    <div data-behavior="vue-shared-button" data-label="Bouton par défaut"></div>
+    <div class="mt-2">
+      <div data-behavior="vue-shared-button" data-label="Succès" data-variant="success" data-size="sm"></div>
+    </div>
+    <div class="mt-2">
+      <div data-behavior="vue-shared-button" data-label="Danger" data-variant="danger" data-size="lg"></div>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <h3>Alertes partagées</h3>
+    <p><code>shared/Alert.vue</code> → <code>vue-shared-alert</code></p>
+    <div data-behavior="vue-shared-alert" data-title="Info" data-message="Ceci est une alerte info" data-type="info"></div>
+    <div class="mt-2" data-behavior="vue-shared-alert" data-title="Succès !" data-message="Opération réussie" data-type="success"></div>
+    <div class="mt-2" data-behavior="vue-shared-alert" data-message="Attention !" data-type="warning"></div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <h3>Input de formulaire</h3>
+    <p><code>forms/TextInput.vue</code> → <code>vue-forms-text-input</code></p>
+    <div data-behavior="vue-forms-text-input" data-label="Nom complet" data-placeholder="Jean Dupont" data-required="true"></div>
+    <div data-behavior="vue-forms-text-input" data-label="Email" data-type="email" data-help-text="Nous ne partagerons jamais votre email"></div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col">
+    <div class="alert alert-success">
+      <h5 class="alert-heading">✅ Pas de conflit de noms !</h5>
+      <p class="mb-0">
+        Si vous créez <code>Button.vue</code> à la racine ET <code>shared/Button.vue</code>,
+        ils seront enregistrés comme <code>vue-button</code> et <code>vue-shared-button</code>.
+        Le système inclut automatiquement le chemin du dossier dans le nom !
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
   <div class="col">
     <div class="card bg-light">
       <div class="card-body">

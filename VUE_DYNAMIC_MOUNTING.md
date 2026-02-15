@@ -4,6 +4,8 @@
 
 Ce système permet de monter dynamiquement plusieurs applications Vue sur une page Rails en utilisant des **data-attributes**. Plus besoin de créer manuellement des apps Vue pour chaque composant !
 
+**✨ Fonctionnalité clé :** **Auto-registration** de tous les composants Vue ! Créez un fichier `.vue` dans `components/`, il est immédiatement disponible avec `data-behavior="vue-{nom}"`. Zéro configuration nécessaire.
+
 ## 🚀 Utilisation Rapide
 
 ### 1. Dans votre vue Rails (.html.erb)
@@ -46,6 +48,10 @@ Ce système permet de monter dynamiquement plusieurs applications Vue sur une pa
 
 ## 🔧 Ajouter un Nouveau Composant
 
+### ⚡ Auto-registration activée !
+
+**Le système enregistre automatiquement tous les composants** du dossier `app/javascript/components/` !
+
 ### Étape 1 : Créer le composant Vue
 
 **Fichier :** `app/javascript/components/MyWidget.vue`
@@ -71,16 +77,14 @@ const props = withDefaults(defineProps<Props>(), {
 </script>
 ```
 
-### Étape 2 : Enregistrer le composant
+### Étape 2 : C'est tout ! 🎉
 
-**Fichier :** `app/javascript/entrypoints/application.ts`
+Le composant est **automatiquement enregistré** grâce à `import.meta.glob` de Vite.
 
-```typescript
-import MyWidget from "@/components/MyWidget.vue"
-
-// Ajouter cette ligne avec les autres enregistrements
-registerComponent("my-widget", MyWidget)
-```
+Le nom du fichier est converti en kebab-case :
+- `MyWidget.vue` → `my-widget` → utilisez `data-behavior="vue-my-widget"`
+- `UserCard.vue` → `user-card` → utilisez `data-behavior="vue-user-card"`
+- `TodoList.vue` → `todo-list` → utilisez `data-behavior="vue-todo-list"`
 
 ### Étape 3 : Utiliser dans votre vue Rails
 
@@ -91,6 +95,15 @@ registerComponent("my-widget", MyWidget)
   data-message="Message personnalisé"
 ></div>
 ```
+
+### 🎯 Avantages
+
+- ✅ **Aucune configuration** : Créez un `.vue`, c'est prêt !
+- ✅ **Tree-shaking** : Vite optimise le bundle automatiquement
+- ✅ **Convention over configuration** : Moins de code à maintenir
+- ✅ **Scalable** : Ajoutez 100 composants sans toucher à `application.ts`
+
+**Documentation détaillée :** Voir `docs/VUE_AUTO_REGISTRATION.md`
 
 ## 📦 Passer des Props
 
@@ -284,35 +297,56 @@ const element = document.querySelector('[data-behavior="vue-counter"]')
 console.log(element.dataset.vueMounted) // "true" si monté
 ```
 
+### Voir les composants auto-enregistrés
+
+Au chargement de la page, la console affiche tous les composants enregistrés :
+
+```
+[VueMounter] Auto-registered "app" from App.vue
+[VueMounter] Auto-registered "counter" from Counter.vue
+[VueMounter] Auto-registered "greeting" from Greeting.vue
+[VueMounter] Auto-registered "todo-list" from TodoList.vue
+[VueMounter] Auto-registered "user-card" from UserCard.vue
+```
+
 ### Warnings courants
 
 **"No component registered for 'my-component'"**
-- Le composant n'est pas enregistré dans `application.ts`
-- Vérifiez l'import et l'appel à `registerComponent()`
+- ✅ Vérifiez que le fichier `.vue` existe bien dans `app/javascript/components/`
+- ✅ Vérifiez l'orthographe du nom (PascalCase dans le fichier, kebab-case dans HTML)
+- ✅ Rechargez la page après avoir créé le fichier
+- ⚠️ Les composants sont auto-enregistrés, pas besoin de modifier `application.ts` !
 
 **Le composant ne se monte pas**
 - Vérifiez que `data-behavior` commence bien par `"vue-"`
 - Vérifiez que l'élément n'est pas déjà monté (`data-vue-mounted="true"`)
 - Vérifiez la console pour des erreurs JavaScript
+- Vérifiez que le nom du fichier correspond (ex: `UserCard.vue` → `vue-user-card`)
 
 ## 🏗️ Architecture
 
 ```
 app/javascript/
 ├── entrypoints/
-│   └── application.ts         # Point d'entrée : enregistre les composants
+│   └── application.ts         # Auto-registration avec import.meta.glob
 ├── components/
-│   ├── Counter.vue            # Composant exemple
-│   ├── Greeting.vue           # Composant exemple
-│   ├── TodoList.vue           # Composant exemple
-│   └── YourComponent.vue      # Vos composants
+│   ├── App.vue                # Composants auto-enregistrés
+│   ├── Counter.vue            # → vue-counter
+│   ├── Greeting.vue           # → vue-greeting
+│   ├── TodoList.vue           # → vue-todo-list
+│   ├── UserCard.vue           # → vue-user-card
+│   └── shared/                # Sous-dossiers supportés !
+│       ├── Button.vue         # → vue-button
+│       └── Modal.vue          # → vue-modal
 └── utils/
     └── vue-mounter.ts         # Système de montage dynamique
 ```
 
-## 🔄 Migration depuis l'ancien système
+**Note :** Avec `@/components/**/*.vue`, les sous-dossiers sont aussi scannés !
 
-**Avant (montage manuel) :**
+## 🔄 Évolution du système
+
+### Génération 1 : Montage manuel (ancien)
 
 ```typescript
 // application.ts
@@ -326,18 +360,21 @@ if (el) {
 ```
 
 ```erb
-<!-- Vue HTML -->
 <div id="vue-app"></div>
 ```
 
-**Après (montage dynamique) :**
+❌ **Limitations :** Un seul composant par page, IDs uniques nécessaires
+
+### Génération 2 : Montage dynamique avec registration manuelle
 
 ```typescript
 // application.ts
 import { registerComponent, initVueMounter } from "@/utils/vue-mounter"
-import App from "@/components/App.vue"
+import Counter from "@/components/Counter.vue"
+import Greeting from "@/components/Greeting.vue"
 
-registerComponent("app", App)
+registerComponent("counter", Counter)
+registerComponent("greeting", Greeting)
 
 document.addEventListener("DOMContentLoaded", () => {
   initVueMounter()
@@ -345,17 +382,46 @@ document.addEventListener("DOMContentLoaded", () => {
 ```
 
 ```erb
-<!-- Vue HTML -->
-<div data-behavior="vue-app"></div>
+<div data-behavior="vue-counter"></div>
+<div data-behavior="vue-greeting"></div>
 ```
 
-## 🎯 Avantages
+⚠️ **Mieux, mais :** Toujours besoin de modifier `application.ts` à chaque composant
 
+### Génération 3 : Auto-registration (actuel) ⭐
+
+```typescript
+// application.ts
+import { registerComponent, initVueMounter } from "@/utils/vue-mounter"
+
+// Auto-register tous les composants
+const componentModules = import.meta.glob('@/components/**/*.vue', { eager: true })
+for (const path in componentModules) {
+  const kebabName = // ... conversion automatique
+  registerComponent(kebabName, componentModules[path].default)
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initVueMounter()
+})
+```
+
+```erb
+<!-- Créez UserCard.vue, utilisez-le immédiatement -->
+<div data-behavior="vue-user-card"></div>
+```
+
+✅ **Parfait :** Convention over configuration, zéro maintenance !
+
+## 🎯 Avantages du système complet
+
+✅ **Auto-registration :** Créez un `.vue`, c'est immédiatement disponible
 ✅ **Simplicité :** Un seul système pour tous vos composants Vue
 ✅ **Flexibilité :** Montez plusieurs composants sur une même page
-✅ **Dynamique :** Fonctionne avec du contenu chargé via AJAX
+✅ **Dynamique :** Fonctionne avec du contenu chargé via AJAX/Turbo
 ✅ **Type-safe :** Support complet de TypeScript
-✅ **Performant :** Pas de double-montage, détection automatique
+✅ **Performant :** Tree-shaking Vite + pas de double-montage
+✅ **Scalable :** 5 ou 500 composants → même code
 ✅ **Rails-friendly :** S'intègre naturellement avec les conventions Rails
 
 ## 📚 Ressources
