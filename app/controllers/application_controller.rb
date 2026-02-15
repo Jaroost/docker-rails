@@ -2,21 +2,11 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
-  helper_method :current_user, :user_signed_in?
+  # Enable JWT-based API authentication alongside session-based authentication
+  include ApiAuthenticatable
 
-  private
-
-  def current_user
-    @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id]
-  end
-
-  def user_signed_in?
-    current_user.present?
-  end
-
-  def authenticate_user!
-    unless user_signed_in?
-      redirect_to root_path, alert: "Please sign in to continue."
-    end
-  end
+  # Devise provides the following helper methods:
+  # - current_user: Returns the currently signed-in user (overridden by ApiAuthenticatable for JWT)
+  # - user_signed_in?: Returns true if a user is signed in (overridden by ApiAuthenticatable for JWT)
+  # - authenticate_user!: Redirects to sign-in page if user is not authenticated
 end

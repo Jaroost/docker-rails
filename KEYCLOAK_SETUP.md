@@ -62,7 +62,70 @@ Ce document décrit la configuration de l'authentification OAuth2 avec Keycloak 
    docker compose up -d --force-recreate web
    ```
 
-### Étape 5: Créer un Utilisateur de Test
+### Étape 5: Créer un Client API (Optionnel - Pour l'API JWT)
+
+**Note**: Cette étape est optionnelle et nécessaire uniquement si vous souhaitez utiliser l'authentification API avec JWT (service-to-service).
+
+1. Menu gauche → "Clients" → "Create client"
+
+**General Settings:**
+- Client type: `OpenID Connect`
+- Client ID: `rails-api-client`
+- Cliquer "Next"
+
+**Capability config:**
+- Client authentication: `ON` (confidential client)
+- Authorization: `OFF`
+- Authentication flow: Cocher uniquement `Service accounts roles`
+- **Décocher** les autres flows (Standard flow, Direct access grants, etc.)
+- Cliquer "Next"
+
+**Login settings:**
+- Laisser vide (pas de redirect URLs pour service accounts)
+- Cliquer "Save"
+
+**Récupérer le Client Secret:**
+1. Aller dans l'onglet "Credentials" du client
+2. Copier la valeur "Client Secret"
+3. Utiliser ce secret pour obtenir des JWT tokens via l'API
+
+**Tester l'obtention de token:**
+```bash
+curl -X POST "https://keycloak.localtest.me/realms/rails-base/protocol/openid-connect/token" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=rails-api-client" \
+  -d "client_secret=<votre-client-secret>"
+```
+
+**Configurer les informations utilisateur (Important pour l'API):**
+
+Par défaut, les service accounts n'ont pas d'email ou de nom. Pour que l'API Rails puisse créer des utilisateurs, il faut configurer ces informations:
+
+1. Menu gauche → "Users"
+2. Chercher l'utilisateur `service-account-rails-api-client`
+3. Cliquer dessus pour l'éditer
+4. Remplir les champs:
+   - Email: `api@rails-base.local`
+   - First name: `Rails API`
+   - Last name: `Service`
+   - Email verified: `ON`
+5. Cliquer "Save"
+
+**Alternative: Utiliser le Password Flow avec un utilisateur réel**
+
+Pour tester l'API avec un utilisateur réel, vous pouvez utiliser le Password Flow:
+```bash
+curl -X POST "https://keycloak.localtest.me/realms/rails-base/protocol/openid-connect/token" \
+  -d "grant_type=password" \
+  -d "client_id=rails-base-app" \
+  -d "client_secret=<client-secret>" \
+  -d "username=testuser" \
+  -d "password=testpassword"
+```
+
+**Note de sécurité**: Le Password Flow n'est pas recommandé en production. Utilisez plutôt le Client Credentials Flow pour les services ou l'Authorization Code Flow pour les applications utilisateur.
+
+### Étape 6: Créer un Utilisateur de Test
 
 1. Menu gauche → "Users" → "Create new user"
 2. Remplir les champs:
@@ -78,7 +141,38 @@ Ce document décrit la configuration de l'authentification OAuth2 avec Keycloak 
 7. Temporary: `OFF`
 8. Cliquer "Save"
 
-## Test du Flux OAuth2
+## API Authentication (JWT)
+
+L'application supporte également l'authentification API via JWT tokens pour les services et applications mobiles.
+
+**Documentation complète**: Voir [API.md](API.md) pour tous les détails.
+
+**Résumé rapide:**
+
+1. **Obtenir un JWT token** depuis Keycloak:
+   ```bash
+   curl -X POST "https://keycloak.localtest.me/realms/rails-base/protocol/openid-connect/token" \
+     -d "grant_type=client_credentials" \
+     -d "client_id=rails-api-client" \
+     -d "client_secret=<votre-client-secret>"
+   ```
+
+2. **Utiliser le token** pour appeler l'API:
+   ```bash
+   curl -X GET "https://rails.localtest.me/api/v1/users/me" \
+     -H "Authorization: Bearer <votre-token>"
+   ```
+
+**Architecture:**
+- **Backend**: Les tokens JWT sont validés en utilisant les clés publiques JWKS de Keycloak
+- **Stateless**: Aucune session Rails, authentification pure par token
+- **Auto-création**: Les utilisateurs sont automatiquement créés/mis à jour depuis les claims JWT
+- **Cache JWKS**: Les clés publiques sont mises en cache pendant 1 heure pour la performance
+
+**Endpoints disponibles:**
+- `GET /api/v1/users/me` - Retourne les informations de l'utilisateur actuel
+
+## Test du Flux OAuth2 (Browser)
 
 ### Test du Login
 

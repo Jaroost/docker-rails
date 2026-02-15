@@ -9,14 +9,30 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  # OAuth authentication routes
-  get "/auth/:provider/callback", to: "sessions#create"
-  post "/auth/:provider/callback", to: "sessions#create"
-  get "/auth/failure", to: "sessions#failure"
-  delete "/logout", to: "sessions#destroy"
-  
-  # Signup route (redirects to Keycloak registration)
-  get "/signup", to: "sessions#signup"
+  # Devise authentication routes with Keycloak OAuth
+  # Skip sessions routes since we're OAuth-only (no password authentication)
+  devise_for :users, 
+    skip: [ :sessions ],
+    controllers: {
+      omniauth_callbacks: "users/omniauth_callbacks"
+    }
+
+  # Custom session routes for OAuth-only authentication
+  devise_scope :user do
+    delete "/users/sign_out", to: "users/sessions#destroy", as: :destroy_user_session
+    get "/signup", to: "users/sessions#signup"
+  end
+
+  # API routes (JWT authentication)
+  namespace :api do
+    namespace :v1 do
+      resources :users, only: [] do
+        collection do
+          get :me
+        end
+      end
+    end
+  end
 
   root "home#test"
 end
