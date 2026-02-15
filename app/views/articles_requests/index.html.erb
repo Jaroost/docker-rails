@@ -1,0 +1,50 @@
+<% content_for :title, "Articles Requests" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>📝 Articles Requests</h1>
+  <%= link_to "Nouvelle demande", new_articles_request_path, class: "btn btn-primary" %>
+</div>
+
+<% if @articles_requests.any? %>
+  <div class="row">
+    <% @articles_requests.each do |articles_request| %>
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title"><%= articles_request.title %></h5>
+            <p class="card-text text-muted">
+              <%= truncate(articles_request.description, length: 150) %>
+            </p>
+
+            <div class="mb-3">
+              <span class="badge bg-info">
+                <%= pluralize(articles_request.articles.count, "article") %>
+              </span>
+              <span class="text-muted small ms-2">
+                Créé <%= time_ago_in_words(articles_request.created_at) %>
+              </span>
+            </div>
+
+            <div class="btn-group" role="group">
+              <%= link_to "Voir", articles_request, class: "btn btn-sm btn-outline-primary" %>
+              <%= link_to "Éditer", edit_articles_request_path(articles_request), class: "btn btn-sm btn-outline-secondary" %>
+              <%= button_to "Supprimer",
+                    articles_request,
+                    method: :delete,
+                    data: { confirm: "Êtes-vous sûr ?" },
+                    class: "btn btn-sm btn-outline-danger" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="alert alert-info">
+    <h4 class="alert-heading">Aucune demande d'articles</h4>
+    <p class="mb-0">
+      Commencez par créer votre première demande d'articles.
+      <%= link_to "Créer une demande", new_articles_request_path, class: "alert-link" %>
+    </p>
+  </div>
+<% end %>

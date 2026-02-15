@@ -1,0 +1,33 @@
+<% content_for :title, @articles_request.title %>
+<div class="mb-4">
+  <%= link_to "← Retour", articles_requests_path, class: "btn btn-outline-secondary btn-sm" %>
+</div>
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h2 class="mb-0"><%= @articles_request.title %></h2>
+    <div class="btn-group">
+      <%= link_to "Éditer", edit_articles_request_path(@articles_request), class: "btn btn-sm btn-primary" %>
+    </div>
+  </div>
+  <div class="card-body">
+    <h5>Description</h5>
+    <p><%= simple_format(@articles_request.description) %></p>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">
+    <h3 class="mb-0">Articles <span class="badge bg-primary"><%= @articles_request.articles.count %></span></h3>
+  </div>
+  <div class="card-body">
+    <% if @articles_request.articles.any? %>
+      <% @articles_request.articles.each_with_index do |article, index| %>
+        <div class="card mb-3">
+          <div class="card-header"><h5><span class="badge bg-secondary"><%= index + 1 %></span> <%= article.title %></h5></div>
+          <div class="card-body"><%= simple_format(article.content) %></div>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="alert alert-warning">Aucun article.</div>
+    <% end %>
+  </div>
+</div>

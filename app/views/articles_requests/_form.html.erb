@@ -1,0 +1,48 @@
+<%= form_with(model: articles_request, local: true, class: "needs-validation", novalidate: true) do |form| %>
+  <% if articles_request.errors.any? %>
+    <div class="alert alert-danger">
+      <h4><%= pluralize(articles_request.errors.count, "erreur") %> :</h4>
+      <ul><% articles_request.errors.full_messages.each do |message| %><li><%= message %></li><% end %></ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= form.label :title, "Titre", class: "form-label" %>
+    <%= form.text_field :title, class: "form-control", required: true, placeholder: "Titre de la demande" %>
+  </div>
+
+  <div class="mb-4">
+    <%= form.label :description, "Description", class: "form-label" %>
+    <%= form.text_area :description, class: "form-control", rows: 4, required: true, placeholder: "Description de la demande" %>
+  </div>
+
+  <h4 class="mb-3">Articles</h4>
+  <div id="articles-fields">
+    <%= form.fields_for :articles do |article_form| %>
+      <div class="card mb-3 article-field">
+        <div class="card-body">
+          <%= article_form.hidden_field :id %>
+          <div class="mb-3">
+            <%= article_form.label :title, "Titre de l'article", class: "form-label" %>
+            <%= article_form.text_field :title, class: "form-control", placeholder: "Titre" %>
+          </div>
+          <div class="mb-3">
+            <%= article_form.label :content, "Contenu", class: "form-label" %>
+            <%= article_form.text_area :content, class: "form-control", rows: 3, placeholder: "Contenu de l'article" %>
+          </div>
+          <% if article_form.object.persisted? %>
+            <div class="form-check">
+              <%= article_form.check_box :_destroy, class: "form-check-input" %>
+              <%= article_form.label :_destroy, "Supprimer cet article", class: "form-check-label text-danger" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="d-flex justify-content-between mt-4">
+    <%= link_to "Annuler", articles_requests_path, class: "btn btn-secondary" %>
+    <%= form.submit "Enregistrer", class: "btn btn-primary" %>
+  </div>
+<% end %>

@@ -34,5 +34,8 @@ Rails.application.routes.draw do
     end
   end
 
+  # ArticlesRequest resources
+  resources :articles_requests
+
   root "home#test"
 end
