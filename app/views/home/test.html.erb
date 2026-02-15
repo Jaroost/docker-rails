@@ -1,4 +1,141 @@
-<h1>Page de test</h1>
-<p>Composant Vue.js monté ci-dessous :</p>
+<% content_for :title, "Démonstration Vue Dynamic Mounting" %>
 
-<div id="vue-app"></div>
+<div class="row mb-4">
+  <div class="col">
+    <h1>🎯 Système de Montage Dynamique Vue.js</h1>
+    <p class="lead">
+      Cette page démontre comment monter plusieurs applications Vue dynamiquement
+      via des <code>data-behavior</code> attributes.
+    </p>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6 mb-3">
+    <h3>Composant Counter (par défaut)</h3>
+    <div data-behavior="vue-counter"></div>
+  </div>
+
+  <div class="col-md-6 mb-3">
+    <h3>Counter avec props personnalisées</h3>
+    <div
+      data-behavior="vue-counter"
+      data-title="Mon compteur personnalisé"
+      data-initial-count="10"
+    ></div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6 mb-3">
+    <h3>Composant Greeting</h3>
+    <div
+      data-behavior="vue-greeting"
+      data-name="Jean Dupont"
+      data-message="Ceci est un message personnalisé passé via data-attributes !"
+    ></div>
+  </div>
+
+  <div class="col-md-6 mb-3">
+    <h3>Greeting avec valeurs par défaut</h3>
+    <div data-behavior="vue-greeting"></div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-8 mb-3">
+    <h3>Composant TodoList</h3>
+    <div
+      data-behavior="vue-todo-list"
+      data-title="Mes tâches du jour"
+      data-initial-todos='["Créer le système de montage dynamique", "Tester avec plusieurs composants", "Déployer en production"]'
+    ></div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <h3>TodoList vide</h3>
+    <div
+      data-behavior="vue-todo-list"
+      data-title="Liste vide"
+    ></div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col">
+    <div class="card bg-light">
+      <div class="card-body">
+        <h4 class="card-title">🔥 Test de montage dynamique</h4>
+        <p class="card-text">
+          Cliquez sur le bouton ci-dessous pour ajouter dynamiquement
+          un nouveau composant Vue à la page. Le système détectera automatiquement
+          le nouvel élément et montera l'application !
+        </p>
+        <button class="btn btn-success" onclick="addDynamicComponent()">
+          ➕ Ajouter un composant dynamiquement
+        </button>
+        <div id="dynamic-container" class="mt-3"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col">
+    <div class="card border-info">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0">📖 Comment ça marche ?</h5>
+      </div>
+      <div class="card-body">
+        <h6>1. Ajouter un composant dans votre HTML :</h6>
+        <pre class="bg-dark text-light p-3 rounded"><code>&lt;div data-behavior="vue-counter"&gt;&lt;/div&gt;</code></pre>
+
+        <h6 class="mt-3">2. Passer des props via data-attributes :</h6>
+        <pre class="bg-dark text-light p-3 rounded"><code>&lt;div
+  data-behavior="vue-greeting"
+  data-name="Jean"
+  data-message="Bonjour !"
+&gt;&lt;/div&gt;</code></pre>
+
+        <h6 class="mt-3">3. Types supportés :</h6>
+        <ul>
+          <li><strong>String :</strong> <code>data-name="Jean"</code></li>
+          <li><strong>Number :</strong> <code>data-count="42"</code></li>
+          <li><strong>Boolean :</strong> <code>data-active="true"</code></li>
+          <li><strong>Array/Object (JSON) :</strong> <code>data-items='["a", "b", "c"]'</code></li>
+        </ul>
+
+        <h6 class="mt-3">4. Montage automatique :</h6>
+        <p>
+          Le système utilise un <code>MutationObserver</code> pour détecter
+          automatiquement les nouveaux éléments ajoutés au DOM, même via JavaScript
+          ou AJAX. Aucune action manuelle nécessaire !
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let dynamicCounter = 0;
+
+  function addDynamicComponent() {
+    dynamicCounter++;
+    const container = document.getElementById('dynamic-container');
+
+    const newElement = document.createElement('div');
+    newElement.className = 'mb-3';
+    newElement.innerHTML = `
+      <div class="alert alert-success">
+        <strong>Composant #${dynamicCounter} ajouté dynamiquement !</strong>
+      </div>
+      <div
+        data-behavior="vue-counter"
+        data-title="Compteur dynamique #${dynamicCounter}"
+        data-initial-count="${dynamicCounter * 5}"
+      ></div>
+    `;
+
+    container.appendChild(newElement);
+  }
+</script>
