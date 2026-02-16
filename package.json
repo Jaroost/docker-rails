@@ -3,16 +3,17 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "vue": "^3.5",
+    "@hotwired/stimulus": "^3.2.2",
+    "@popperjs/core": "^2.11",
     "bootstrap": "^5.3",
-    "@popperjs/core": "^2.11"
+    "vue": "^3.5"
   },
   "devDependencies": {
+    "@vitejs/plugin-basic-ssl": "^2",
+    "@vitejs/plugin-vue": "^5",
     "typescript": "^5.7",
     "vite": "^6",
     "vite-plugin-ruby": "^3",
-    "@vitejs/plugin-vue": "^5",
-    "@vitejs/plugin-basic-ssl": "^2",
     "vue-tsc": "^2"
   }
 }

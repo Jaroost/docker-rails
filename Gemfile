@@ -36,6 +36,9 @@ gem "omniauth-rails_csrf_protection"
 # Devise for authentication
 gem "devise"
 
+# Simple Form for better forms with Bootstrap integration
+gem "simple_form"
+
 # JWT authentication for API (includes JWKS support)
 gem "jwt"
 

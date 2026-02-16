@@ -1,8 +1,31 @@
 import "bootstrap/dist/css/bootstrap.min.css"
 import "bootstrap"
 
+// Import Stimulus
+import { Application } from "@hotwired/stimulus"
+
 // Import the Vue mounting system
 import { registerComponent, initVueMounter } from "@/utils/vue-mounter"
+
+// Start Stimulus application
+const Stimulus = Application.start()
+
+// Auto-register all Stimulus controllers
+const controllerModules = import.meta.glob<{ default: any }>('@/controllers/**/*_controller.js', { eager: true })
+
+for (const path in controllerModules) {
+  // Extract controller name from path
+  // Example: "/controllers/nested_form_controller.js" → "nested-form"
+  const controllerName = path
+    .replace(/^.*\/controllers\//, '')
+    .replace(/_controller\.js$/, '')
+    .replace(/_/g, '-')
+
+  const controller = controllerModules[path].default
+  Stimulus.register(controllerName, controller)
+
+  console.log(`[Stimulus] Auto-registered "${controllerName}" controller`)
+}
 
 /**
  * Auto-register all Vue components from the components directory (including subdirectories)

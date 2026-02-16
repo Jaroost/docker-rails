@@ -1,27 +1,37 @@
-<%= form_with(model: articles_request, local: true, class: "needs-validation", novalidate: true) do |form| %>
-  <% if articles_request.errors.any? %>
-    <div class="alert alert-danger">
-      <h4><%= pluralize(articles_request.errors.count, "erreur") %> :</h4>
-      <ul><% articles_request.errors.full_messages.each do |message| %><li><%= message %></li><% end %></ul>
+<%= simple_form_for articles_request, wrapper: :floating_labels_form do |form| %>
+  <%= form.error_notification %>
+  <%= form.error_notification message: form.object.errors[:base].to_sentence if form.object.errors[:base].present? %>
+
+  <%= form.input :title, label: "Titre", placeholder: "Titre" %>
+  <%= form.input :description, label: "Description", as: :text, input_html: { rows: 4 }, placeholder: "Description" %>
+
+  <div data-controller="nested-form">
+    <h4 class="mb-3">Articles</h4>
+
+    <div data-nested-form-target="container">
+      <%= form.fields_for :articles do |article_form| %>
+        <%= render "articles_requests/article_fields", f: article_form %>
+      <% end %>
     </div>
-  <% end %>
 
-  <div class="mb-3">
-    <%= form.label :title, "Titre", class: "form-label" %>
-    <%= form.text_field :title, class: "form-control", required: true, placeholder: "Titre de la demande" %>
-  </div>
+    <%# Template for new articles (hidden) %>
+    <template data-nested-form-target="template">
+      <%= form.fields_for :articles, ArticlesRequest::Article.new, child_index: "NEW_RECORD" do |article_form| %>
+        <%= render "articles_requests/article_fields", f: article_form %>
+      <% end %>
+    </template>
 
-  <div class="mb-4">
-    <%= form.label :description, "Description", class: "form-label" %>
-    <%= form.text_area :description, class: "form-control", rows: 4, required: true, placeholder: "Description de la demande" %>
-  </div>
-
-  <div data-behavior="vue-articles-request-form"
-       data-initial-articles='<%= articles_request.articles.to_json(only: [:id, :title, :content]) %>'>
+    <div class="mb-4">
+      <button type="button"
+              class="btn btn-outline-primary"
+              data-action="nested-form#add">
+        + Ajouter un article
+      </button>
+    </div>
   </div>
 
   <div class="d-flex justify-content-between mt-4">
     <%= link_to "Annuler", articles_requests_path, class: "btn btn-secondary" %>
-    <%= form.submit "Enregistrer", class: "btn btn-primary" %>
+    <%= form.button :submit, "Enregistrer", class: "btn btn-primary" %>
   </div>
 <% end %>
