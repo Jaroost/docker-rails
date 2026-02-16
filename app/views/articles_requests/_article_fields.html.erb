@@ -15,5 +15,14 @@
 
     <%= f.input :title, label: "Titre de l'article", placeholder: "Titre de l'article", wrapper: :floating_labels_form %>
     <%= f.input :content, label: "Contenu", as: :text, input_html: { rows: 3 }, placeholder: "Contenu", wrapper: :floating_labels_form %>
+
+    <%# File upload with drag & drop %>
+    <%= render "shared/file_upload",
+               form: f,
+               field: :attachment,
+               label: "Image ou document",
+               accept: "image/*,application/pdf",
+               max_size: 5.megabytes,
+               help_text: "Glissez-déposez une image ou PDF (max 5 MB)" %>
   </div>
 </div>

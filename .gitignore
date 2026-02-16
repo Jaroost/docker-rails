@@ -80,3 +80,5 @@ Thumbs.db
 /public/packs
 /public/packs-test
 /node_modules
+/public/uploads/*
+\!/public/uploads/*/.gitkeep

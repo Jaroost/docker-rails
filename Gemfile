@@ -39,6 +39,9 @@ gem "devise"
 # Simple Form for better forms with Bootstrap integration
 gem "simple_form"
 
+# Shrine for file uploads (alternative to ActiveStorage)
+gem "shrine", "~> 3.0"
+
 # JWT authentication for API (includes JWKS support)
 gem "jwt"
 

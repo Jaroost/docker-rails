@@ -4,6 +4,9 @@ class ArticlesRequest::Article < ApplicationRecord
   # Table name is explicitly set by Rails convention for namespaced models
   # This will use the table: articles_request_articles
 
+  # Shrine uploader
+  include AttachmentUploader::Attachment(:attachment)
+
   # Association
   belongs_to :articles_request,
     class_name: "::ArticlesRequest",
