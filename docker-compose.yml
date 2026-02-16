@@ -52,12 +52,18 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-    ports:
-      - "3036:3036"
     environment:
       VITE_HOST: "0.0.0.0"
       VITE_PORT: "3036"
       VITE_PROTOCOL: "http"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.vite.rule=Host(`vite-rails.localtest.me`)"
+      - "traefik.http.routers.vite.service=vite"
+      - "traefik.http.services.vite.loadbalancer.server.port=3036"
+      - "traefik.http.routers.vite.entrypoints=websecure"
+      - "traefik.http.routers.vite.tls=true"
     networks:
       - proxy
       - default
