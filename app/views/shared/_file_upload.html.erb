@@ -21,6 +21,12 @@
   existing_file = form.object.public_send(field)
   existing_name = existing_file&.original_filename
   existing_type = existing_file&.mime_type
+  cached_data_method = :"cached_#{field}_data"
+  cached_data = if form.object.respond_to?(cached_data_method)
+                  form.object.public_send(cached_data_method)
+                else
+                  form.object.public_send(:"#{field}_data")
+                end
 %>
 <div data-controller="file-upload"
      data-file-upload-max-size-value="<%= max_size %>"
@@ -31,7 +37,7 @@
   <label class="form-label"><%= label %></label>
 
   <%# Shrine cached data - preserves file on validation failure %>
-  <%= form.hidden_field :"#{field}_data" %>
+  <%= form.hidden_field :"#{field}_data", value: cached_data %>
 
   <%# Hidden file input %>
   <%= form.file_field field,

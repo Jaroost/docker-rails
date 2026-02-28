@@ -15,6 +15,14 @@ export default class extends Controller {
     this.setupDragAndDrop()
     if (this.existingNameValue) {
       this.showExistingFile(this.existingNameValue, this.existingTypeValue)
+      return
+    }
+
+    // After validation errors, Shrine usually keeps only *_data hidden field.
+    // Rebuild preview from cached metadata so the file doesn't appear "lost".
+    const cachedFile = this.cachedFileFromDataField()
+    if (cachedFile) {
+      this.showExistingFile(cachedFile.name, cachedFile.type)
     }
   }
 
@@ -167,6 +175,21 @@ export default class extends Controller {
       </div>
     `
     this.showPreview()
+  }
+
+  cachedFileFromDataField() {
+    const dataField = this.element.querySelector('input[type="hidden"][name*="_data"]')
+    if (!dataField || !dataField.value) return null
+
+    try {
+      const parsed = JSON.parse(dataField.value)
+      const metadata = parsed?.metadata || {}
+      const name = metadata.filename || parsed?.id || "Fichier en cache"
+      const type = metadata.mime_type || "application/octet-stream"
+      return { name, type }
+    } catch (_error) {
+      return null
+    }
   }
 
   remove(event) {

@@ -1,6 +1,7 @@
 require "shrine"
 require "shrine/storage/file_system"
 
+
 # Configuration Shrine pour le stockage local
 Shrine.storages = {
   cache: Shrine::Storage::FileSystem.new("public", prefix: "uploads/cache"),
