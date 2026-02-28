@@ -13,6 +13,7 @@ module Api
           username: current_user.username,
           first_name: current_user.first_name,
           last_name: current_user.last_name,
+          role: current_user.role,
           provider: current_user.provider,
           created_at: current_user.created_at,
           updated_at: current_user.updated_at

@@ -1,9 +1,13 @@
 class ArticlesRequestsController < ApplicationController
+  before_action :authenticate_user!
   before_action :set_articles_request, only: [:show, :edit, :update, :destroy]
+  before_action :authorize_articles_request_class, only: [:new, :create]
+  after_action :verify_authorized, except: [:index]
+  after_action :verify_policy_scoped, only: [:index]
 
   # GET /articles_requests
   def index
-    @articles_requests = ArticlesRequest.includes(:articles).order(created_at: :desc)
+    @articles_requests = policy_scope(ArticlesRequest).includes(:articles).order(created_at: :desc)
   end
 
   # GET /articles_requests/:id
@@ -53,6 +57,11 @@ class ArticlesRequestsController < ApplicationController
 
   def set_articles_request
     @articles_request = ArticlesRequest.find(params[:id])
+    authorize @articles_request
+  end
+
+  def authorize_articles_request_class
+    authorize ArticlesRequest
   end
 
   def articles_request_params

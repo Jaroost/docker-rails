@@ -96,6 +96,7 @@ module Api
         assert_equal "apiuser", json_response["username"]
         assert_equal "Test", json_response["first_name"]
         assert_equal "User", json_response["last_name"]
+        assert_equal "reader", json_response["role"]
         assert_equal "keycloak", json_response["provider"]
       end
 

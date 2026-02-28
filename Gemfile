@@ -36,6 +36,9 @@ gem "omniauth-rails_csrf_protection"
 # Devise for authentication
 gem "devise"
 
+# Authorization policies
+gem "pundit"
+
 # Simple Form for better forms with Bootstrap integration
 gem "simple_form"
 

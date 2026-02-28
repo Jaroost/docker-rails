@@ -7,8 +7,13 @@ class User < ApplicationRecord
   devise :omniauthable, :trackable, :rememberable,
     omniauth_providers: [ :keycloak ]
 
+  enum :role, { reader: 0, admin: 1 }, default: :reader
+
   # Create or update user from OmniAuth authentication data
   def self.from_omniauth(auth)
+    raw_info = auth.extra&.raw_info
+    role = map_keycloak_roles_to_app_role(extract_keycloak_roles(raw_info&.to_h || {}))
+
     where(provider: auth.provider, uid: auth.uid).first_or_create do |user|
       user.email = auth.info.email
       user.username = auth.info.preferred_username || auth.info.email&.split("@")&.first
@@ -17,13 +22,15 @@ class User < ApplicationRecord
       user.token = auth.credentials.token
       user.refresh_token = auth.credentials.refresh_token
       user.token_expires_at = auth.credentials.expires_at ? Time.at(auth.credentials.expires_at) : nil
+      user.role = role
     end.tap do |user|
       # Update token and last sign-in time on each login
       user.update(
         token: auth.credentials.token,
         refresh_token: auth.credentials.refresh_token,
         token_expires_at: auth.credentials.expires_at ? Time.at(auth.credentials.expires_at) : nil,
-        last_sign_in_at: Time.current
+        last_sign_in_at: Time.current,
+        role: role
       )
     end
   end
@@ -37,6 +44,7 @@ class User < ApplicationRecord
     preferred_username = jwt_claims["preferred_username"]
     given_name = jwt_claims["given_name"]
     family_name = jwt_claims["family_name"]
+    role = map_keycloak_roles_to_app_role(extract_keycloak_roles(jwt_claims))
 
     # Validate required claims
     raise ArgumentError, "Missing required JWT claims: sub and email" if uid.blank? || email.blank?
@@ -47,14 +55,40 @@ class User < ApplicationRecord
       user.username = preferred_username || email.split("@").first
       user.first_name = given_name
       user.last_name = family_name
+      user.role = role
     end.tap do |user|
       # Update user info from JWT on each API call (in case it changed in Keycloak)
       user.update(
         email: email,
         username: preferred_username || email.split("@").first,
         first_name: given_name,
-        last_name: family_name
+        last_name: family_name,
+        role: role
       )
     end
+  end
+
+  def self.extract_keycloak_roles(claims)
+    return [] unless claims.respond_to?(:[])
+
+    roles = []
+    roles.concat(Array(claims.dig("realm_access", "roles")))
+    roles.concat(Array(claims.dig(:realm_access, :roles)))
+
+    client_id = ENV["KEYCLOAK_CLIENT_ID"]
+    if client_id.present?
+      roles.concat(Array(claims.dig("resource_access", client_id, "roles")))
+      roles.concat(Array(claims.dig(:resource_access, client_id.to_sym, :roles)))
+    end
+
+    roles.compact.map(&:to_s).uniq
+  end
+
+  def self.map_keycloak_roles_to_app_role(keycloak_roles)
+    normalized = keycloak_roles.map { |role| role.to_s.downcase }
+    return :admin if normalized.include?("admin")
+    return :reader if normalized.include?("reader")
+
+    :reader
   end
 end

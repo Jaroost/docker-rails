@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_28_134416) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_28_162500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -43,12 +43,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_28_134416) do
     t.string "provider"
     t.text "refresh_token"
     t.datetime "remember_created_at"
+    t.integer "role", default: 0, null: false
     t.integer "sign_in_count"
     t.text "token"
     t.datetime "token_expires_at"
     t.string "uid"
     t.datetime "updated_at", null: false
     t.string "username"
+    t.index ["role"], name: "index_users_on_role"
   end
 
   add_foreign_key "articles_request_articles", "articles_requests"
