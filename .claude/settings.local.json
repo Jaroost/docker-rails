@@ -3,7 +3,8 @@
     "allow": [
       "Bash(docker compose exec:*)",
       "Bash(curl:*)",
-      "Bash(docker network inspect:*)"
+      "Bash(docker network inspect:*)",
+      "Bash(docker compose:*)"
     ]
   }
 }

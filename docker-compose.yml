@@ -36,7 +36,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.rails.rule=Host(`rails.localtest.me`)"
+      - "traefik.http.routers.rails.rule=Host(`rails.localhost`)"
       - "traefik.http.routers.rails.service=rails"
       - "traefik.http.services.rails.loadbalancer.server.port=3000"
       - "traefik.http.routers.rails.entrypoints=websecure"

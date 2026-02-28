@@ -3,7 +3,10 @@ class AttachmentUploader < Shrine
   plugin :remove_invalid
   plugin :pretty_location
   plugin :validation_helpers
-  plugin :store_dimensions, analyzer: :mini_magick
+  plugin :store_dimensions, analyzer: ->(io, analyzers) {
+    mime = io.respond_to?(:mime_type) ? io.mime_type : io.content_type
+    analyzers[:mini_magick].call(io) if mime&.start_with?("image/")
+  }
 
   # Validations
   Attacher.validate do

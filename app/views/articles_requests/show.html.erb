@@ -23,7 +23,20 @@
       <% @articles_request.articles.each_with_index do |article, index| %>
         <div class="card mb-3">
           <div class="card-header"><h5><span class="badge bg-secondary"><%= index + 1 %></span> <%= article.title %></h5></div>
-          <div class="card-body"><%= simple_format(article.content) %></div>
+          <div class="card-body">
+            <%= simple_format(article.content) %>
+            <% if article.attachment %>
+              <div class="mt-3">
+                <% if article.attachment.mime_type&.start_with?("image/") %>
+                  <%= image_tag article.attachment_url, class: "img-fluid rounded", style: "max-height: 300px" %>
+                <% else %>
+                  <%= link_to article.attachment_url, class: "btn btn-sm btn-outline-secondary", target: "_blank" do %>
+                    📎 <%= article.attachment.original_filename %>
+                  <% end %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
         </div>
       <% end %>
     <% else %>

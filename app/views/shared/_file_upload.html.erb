@@ -1,11 +1,12 @@
-<%# Partial pour upload de fichier avec drag & drop
+<%#
+  Partial pour upload de fichier avec drag & drop
   Usage:
-    <%= render "shared/file_upload",
-               form: f,
-               field: :attachment,
-               label: "Fichier",
-               accept: "image/*",
-               max_size: 10.megabytes %>
+    render "shared/file_upload",
+           form: f,
+           field: :attachment,
+           label: "Fichier",
+           accept: "image/*",
+           max_size: 10.megabytes
 %>
 
 <%
@@ -16,11 +17,21 @@
   help_text ||= "Glissez-déposez un fichier ou cliquez pour parcourir (max #{number_to_human_size(max_size)})"
 %>
 
+<%
+  existing_file = form.object.public_send(field)
+  existing_name = existing_file&.original_filename
+  existing_type = existing_file&.mime_type
+%>
 <div data-controller="file-upload"
      data-file-upload-max-size-value="<%= max_size %>"
-     data-file-upload-accept-value="<%= accept %>">
+     data-file-upload-accept-value="<%= accept %>"
+     data-file-upload-existing-name-value="<%= existing_name %>"
+     data-file-upload-existing-type-value="<%= existing_type %>">
 
   <label class="form-label"><%= label %></label>
+
+  <%# Shrine cached data - preserves file on validation failure %>
+  <%= form.hidden_field :"#{field}_data" %>
 
   <%# Hidden file input %>
   <%= form.file_field field,

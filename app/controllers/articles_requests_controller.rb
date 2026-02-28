@@ -59,7 +59,7 @@ class ArticlesRequestsController < ApplicationController
     params.require(:articles_request).permit(
       :title,
       :description,
-      articles_attributes: [:id, :title, :content, :attachment, :_destroy]
+      articles_attributes: [:id, :title, :content, :attachment, :attachment_data, :_destroy]
     )
   end
 end

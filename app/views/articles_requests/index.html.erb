@@ -20,6 +20,12 @@
               <span class="badge bg-info">
                 <%= pluralize(articles_request.articles.count, "article") %>
               </span>
+              <% attachments_count = articles_request.articles.count { |a| a.attachment.present? } %>
+              <% if attachments_count > 0 %>
+                <span class="badge bg-secondary">
+                  📎 <%= pluralize(attachments_count, "pièce jointe") %>
+                </span>
+              <% end %>
               <span class="text-muted small ms-2">
                 Créé <%= time_ago_in_words(articles_request.created_at) %>
               </span>

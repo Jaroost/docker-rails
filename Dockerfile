@@ -4,7 +4,9 @@ RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
       build-essential \
       curl \
+      file \
       git \
+      imagemagick \
       libpq-dev \
       libyaml-dev \
       pkg-config && \
