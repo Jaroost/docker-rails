@@ -11,8 +11,7 @@ class User < ApplicationRecord
 
   # Create or update user from OmniAuth authentication data
   def self.from_omniauth(auth)
-    raw_info = auth.extra&.raw_info
-    role = map_keycloak_roles_to_app_role(extract_keycloak_roles(raw_info&.to_h || {}))
+    role = map_keycloak_roles_to_app_role(extract_keycloak_roles_from_omniauth(auth))
 
     where(provider: auth.provider, uid: auth.uid).first_or_create do |user|
       user.email = auth.info.email
@@ -75,10 +74,14 @@ class User < ApplicationRecord
     roles.concat(Array(claims.dig("realm_access", "roles")))
     roles.concat(Array(claims.dig(:realm_access, :roles)))
 
-    client_id = ENV["KEYCLOAK_CLIENT_ID"]
-    if client_id.present?
-      roles.concat(Array(claims.dig("resource_access", client_id, "roles")))
-      roles.concat(Array(claims.dig(:resource_access, client_id.to_sym, :roles)))
+    resource_access = claims["resource_access"] || claims[:resource_access]
+    if resource_access.respond_to?(:each_value)
+      resource_access.each_value do |client_claims|
+        next unless client_claims.respond_to?(:[])
+
+        roles.concat(Array(client_claims["roles"]))
+        roles.concat(Array(client_claims[:roles]))
+      end
     end
 
     roles.compact.map(&:to_s).uniq
@@ -90,5 +93,28 @@ class User < ApplicationRecord
     return :reader if normalized.include?("reader")
 
     :reader
+  end
+
+  def self.extract_keycloak_roles_from_omniauth(auth)
+    claims = []
+    claims << auth.extra&.raw_info&.to_h
+    claims << decode_unverified_jwt_claims(auth.credentials&.token)
+
+    credentials_hash = auth.credentials.respond_to?(:to_h) ? auth.credentials.to_h : {}
+    claims << decode_unverified_jwt_claims(credentials_hash["id_token"] || credentials_hash[:id_token])
+
+    extra_hash = auth.extra.respond_to?(:to_h) ? auth.extra.to_h : {}
+    claims << decode_unverified_jwt_claims(extra_hash["id_token"] || extra_hash[:id_token])
+
+    claims.flat_map { |entry| extract_keycloak_roles(entry || {}) }.uniq
+  end
+
+  def self.decode_unverified_jwt_claims(token)
+    return {} if token.blank?
+
+    payload, = JWT.decode(token, nil, false)
+    payload.is_a?(Hash) ? payload : {}
+  rescue StandardError
+    {}
   end
 end
